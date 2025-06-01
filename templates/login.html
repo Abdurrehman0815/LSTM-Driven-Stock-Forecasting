@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Signup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: #00eaff;
+            background: url("{{ url_for('static', filename='login.jpeg') }}") no-repeat center center fixed;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+        }
+
+        .container {
+            width: 400px;
+            margin: auto;
+            padding: 25px;
+            background:rgba(120, 114, 114, 0.61);
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 234, 255, 0.5);
+            margin-top: 60px;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        input {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #00eaff;
+            background: #1e1e1e;
+            color: white;
+            border-radius: 5px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        button {
+            width: 95%;
+            padding: 12px;
+            background: #00eaff;
+            color: #121212;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background: #00b3cc;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .toggle-btn {
+            cursor: pointer;
+            color: #00eaff;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2 id="form-title">Login</h2>
+
+        <form method="POST">
+            <input type="hidden" id="action" name="action" value="login">
+
+            <div id="signup-fields" class="hidden">
+                <input type="text" name="username" placeholder="Username">
+            </div>
+
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+
+            <button type="submit">Submit</button>
+        </form>
+
+        <p id="toggle-text">Don't have an account? <span class="toggle-btn" onclick="toggleForm()">Sign Up</span></p>
+    </div>
+
+    <script>
+        function toggleForm() {
+            var title = document.getElementById("form-title");
+            var action = document.getElementById("action");
+            var signupFields = document.getElementById("signup-fields");
+            var toggleText = document.getElementById("toggle-text");
+
+            if (action.value === "login") {
+                title.innerText = "Sign Up";
+                action.value = "signup";
+                signupFields.classList.remove("hidden");
+                toggleText.innerHTML = 'Already have an account? <span class="toggle-btn" onclick="toggleForm()">Login</span>';
+            } else {
+                title.innerText = "Login";
+                action.value = "login";
+                signupFields.classList.add("hidden");
+                toggleText.innerHTML = 'Don\'t have an account? <span class="toggle-btn" onclick="toggleForm()">Sign Up</span>';
+            }
+        }
+    </script>
+
+</body>
+
+</html>

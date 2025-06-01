@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Prediction</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #121212; color: white; padding: 20px; }
+        h1 { color: cyan; }
+        form { margin-bottom: 20px; }
+        input, button { padding: 10px; margin: 5px; }
+        input { background: #222; color: white; border: 1px solid cyan; }
+        button { background: cyan; color: black; border: none; cursor: pointer; font-weight: bold; }
+        
+        .container { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 20px; 
+            width: 90%; 
+            margin: auto; 
+        }
+
+        .box {
+            padding: 15px; 
+            border: 2px solid cyan; 
+            background: #222; 
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .full-width { width: 90%; }
+        .half-width { width: 45%; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid cyan; padding: 8px; text-align: left; }
+        th { background: cyan; color: black; }
+
+        
+        .green {
+            color: #00ff00; /* Green for positive change */
+        }
+        .red {
+            color: #ff0000; /* Red for negative change */
+        }
+
+        /* News Button - Positioned at Top Left */
+        .news-button {
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
+            background: cyan; 
+            color: black; 
+            padding: 10px 15px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .news-button:hover { background: white; color: black; }
+
+        /* Sidebar Styling */
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #222;
+            overflow-x: hidden;
+            transition: 0.3s;
+            padding-top: 60px;
+            z-index: 1000;
+        }
+        .sidebar a {
+            padding: 15px 20px;
+            text-decoration: none;
+            font-size: 18px;
+            color: cyan;
+            display: block;
+            transition: 0.3s;
+        }
+        .sidebar a:hover { background: cyan; color: black; }
+        .close-btn { position: absolute; top: 10px; right: 25px; font-size: 30px; cursor: pointer; color: cyan; }
+        
+        /* Three-Line Menu Icon */
+        .menu-icon {
+            font-size: 30px;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: cyan;
+            z-index: 1001;
+        }
+
+        /* Background Video */
+        .video-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            overflow: hidden; z-index: -1;
+        }
+        .video-container iframe {
+            position: absolute; top: 50%; left: 50%;
+            width: 120vw; height: 120vh; transform: translate(-50%, -50%);
+            opacity: 0.3; pointer-events: none;
+        }
+
+        /* Ensure content remains visible and readable */
+        .content { position: relative; z-index: 1; }
+    </style>
+    <script>
+        function fetchLiveStockPrices() {
+            fetch("/get_stock_prices")
+            .then(response => response.json())
+            .then(data => {
+                let marqueeText = "";
+                let container = document.getElementById("stock-marquee");
+    
+                data.forEach(stock => {
+                    let changeClass = stock.price_change >= 0 ? "green" : "red";
+                    let changeSymbol = stock.price_change >= 0 ? "+" : "";
+    
+                    marqueeText += `
+                        ${stock.symbol}: ₹${stock.current_price.toFixed(2)}
+                        <span class="${changeClass}">${changeSymbol}${stock.price_change.toFixed(2)}
+                        (${changeSymbol}${stock.percentage_change.toFixed(2)}%)</span> | `;
+                });
+    
+                container.innerHTML = marqueeText;
+            });
+        }
+    
+        setInterval(fetchLiveStockPrices, 20000);
+        window.onload = fetchLiveStockPrices;
+
+        function openSidebar() { document.getElementById("sidebar").style.width = "250px"; }
+        function closeSidebar() { document.getElementById("sidebar").style.width = "0"; }
+    </script>
+    
+</head>
+<body>
+
+     <!-- Background Video -->
+     <div class="video-container">
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/ipUuoMCEbDQ?autoplay=1&mute=1&loop=1&playlist=ipUuoMCEbDQ&controls=0" 
+                frameborder="0" allowfullscreen></iframe>
+    </div>
+
+    <!-- Hamburger Menu -->
+    <div class="menu-icon" onclick="openSidebar()">&#9776;</div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <a href="javascript:void(0)" class="close-btn" onclick="closeSidebar()">&times;</a>
+        <a href="{{ url_for('stock') }}">🏠 Home</a>
+        <a href="{{ url_for('news', symbol1=symbol1, symbol2=symbol2) }}">📰 News</a>
+        <a href="{{ url_for('history') }}">📜 History</a>
+        <a href="{{ url_for('login') }}">🚪 Logout</a>
+    </div>
+
+    <div class="marquee-container">
+        <marquee behavior="scroll" direction="left" id="stock-marquee">Loading stock prices...</marquee>
+    </div>
+
+    
+
+    <h1>📈 Stock Market Prediction 📉</h1>
+    <form method="POST">
+        <input type="text" name="symbol1" placeholder="Stock Symbol (AAPL)" required>
+        <input type="text" name="symbol2" placeholder="Compare Stock">
+        <button type="submit">Predict</button>
+    </form>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    {% if symbol1 %}
+        <div class="container" style="{% if not symbol2 %}flex-direction: column; align-items: center;{% endif %}">
+            <div class="box {% if symbol2 %}half-width{% else %}full-width{% endif %}">
+                <h2>Stock: {{ symbol1 }}</h2>
+                <h3>📌 Current Price: ${{ current_price1 }}</h3>
+                <h3>📅 Predicted Price (Next 60 Days): ₹{{ predicted_price1 }}</h3>
+                <div>{{ plot1|safe }}</div>
+
+                <h2>Market Insights</h2>
+                <table>
+                    <tr><th>Previous Close</th><td>{{ info1.get('previousClose', 'N/A') }}</td></tr>
+                    <tr><th>Open</th><td>{{ info1.get('open', 'N/A') }}</td></tr>
+                    <tr><th>PE Ratio</th><td>{{ info1.get('trailingPE', 'N/A') }}</td></tr>
+                    <tr><th>1-Year Target</th><td>{{ info1.get('targetMeanPrice', 'N/A') }}</td></tr>
+                    <tr><th>52-Week High</th><td>{{ info1.get('fiftyTwoWeekHigh', 'N/A') }}</td></tr>
+                    <tr><th>52-Week Low</th><td>{{ info1.get('fiftyTwoWeekLow', 'N/A') }}</td></tr>
+                </table>
+
+                
+            </div>
+
+            {% if symbol2 %}
+            <div class="box half-width">
+                <h2>Stock: {{ symbol2 }}</h2>
+                <h3>📌 Current Price: ${{ current_price2 }}</h3>
+                <h3>📅 Predicted Price (Next 60 Days): ₹{{ predicted_price2 }}</h3>
+                <div>{{ plot2|safe }}</div>
+
+                <h2>Market Insights</h2>
+                <table>
+                    <tr><th>Previous Close</th><td>{{ info2.get('previousClose', 'N/A') }}</td></tr>
+                    <tr><th>Open</th><td>{{ info2.get('open', 'N/A') }}</td></tr>
+                    <tr><th>PE Ratio</th><td>{{ info2.get('trailingPE', 'N/A') }}</td></tr>
+                    <tr><th>1-Year Target</th><td>{{ info2.get('targetMeanPrice', 'N/A') }}</td></tr>
+                    <tr><th>52-Week High</th><td>{{ info2.get('fiftyTwoWeekHigh', 'N/A') }}</td></tr>
+                    <tr><th>52-Week Low</th><td>{{ info2.get('fiftyTwoWeekLow', 'N/A') }}</td></tr>
+                </table>
+
+               
+            </div>
+            {% endif %}
+        </div>
+    {% endif %}
+   
+</a>
+
+
+</body>
+</html>

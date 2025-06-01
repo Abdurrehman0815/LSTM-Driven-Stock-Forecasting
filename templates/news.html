@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ symbol }} - Stock News</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap');
+
+        /* Background with image */
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background: url("{{ url_for('static', filename='news.jpg') }}") no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            color:rgb(239, 20, 20);
+            text-shadow: 0px 0px 10px #00f2ff;
+            margin-bottom: 20px;
+        }
+
+        .news-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .column {
+            width: 48%;
+        }
+
+        .news-item {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #00f2ff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .news-item:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: translateY(-5px);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
+
+        .news-item a {
+            text-decoration: none;
+            color:rgb(226, 115, 18);
+            font-weight: bold;
+            font-size: 18px;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .news-item a:hover {
+            color: #ff00ff;
+            text-shadow: 0px 0px 5px #ff00ff;
+        }
+
+        .news-item p {
+            font-size: 14px;
+            color: #ddd;
+            margin-top: 8px;
+            text-align: justify;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 20px;
+            background: linear-gradient(45deg, #ff00ff, #00f2ff);
+            color: white;
+            padding: 12px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .back-button:hover {
+            background: linear-gradient(45deg, #00f2ff, #ff00ff);
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.7);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .news-container {
+                flex-direction: column;
+            }
+            .column {
+                width: 100%;
+            }
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #222;
+            overflow-x: hidden;
+            transition: 0.3s;
+            padding-top: 60px;
+            z-index: 1000;
+        }
+
+        .sidebar a {
+            padding: 15px 20px;
+            text-decoration: none;
+            font-size: 18px;
+            color: cyan;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .sidebar a:hover { 
+            background: cyan; 
+            color: black; 
+        }
+
+        .close-btn { 
+            position: absolute; 
+            top: 10px; 
+            right: 25px; 
+            font-size: 30px; 
+            cursor: pointer; 
+            color: cyan; 
+        }
+        
+        /* Three-Line Menu Icon */
+        .menu-icon {
+            font-size: 30px;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: cyan;
+            z-index: 1001;
+        }
+    </style>
+    <script>
+        function openSidebar() {
+            document.getElementById("sidebar").style.width = "250px";
+        }
+        function closeSidebar() {
+            document.getElementById("sidebar").style.width = "0";
+        }
+    </script>
+</head>
+<body>
+
+     <!-- Hamburger Menu -->
+     <div class="menu-icon" onclick="openSidebar()">&#9776;</div>
+
+     <!-- Sidebar -->
+     <div id="sidebar" class="sidebar">
+         <a href="javascript:void(0)" class="close-btn" onclick="closeSidebar()">&times;</a>
+         <a href="{{ url_for('stock') }}">🏠 Home</a>
+         <a href="{{ url_for('news', symbol1=symbol1, symbol2=symbol2) }}">📰 News</a>
+         <a href="{{ url_for('history') }}">📜 History</a>
+         <a href="{{ url_for('login') }}">🚪 Logout</a>
+     </div>
+
+    <h1>📰 Latest News for {{ symbol }}</h1>
+    
+    <div class="news-container">
+        {% if news_list|length <= 5 %}
+            <div class="column" style="width: 100%; text-align: center;">
+                {% for news in news_list %}
+                    <div class="news-item" style="margin: auto; max-width: 500px;">
+                        <a href="{{ news.link }}" target="_blank">• {{ news.title }}</a>
+                        <p>{{ news.summary }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="column">
+                {% for news in news_list[:5] %}
+                    <div class="news-item">
+                        <a href="{{ news.link }}" target="_blank">• {{ news.title }}</a>
+                        <p>{{ news.summary }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="column">
+                {% for news in news_list[5:] %}
+                    <div class="news-item">
+                        <a href="{{ news.link }}" target="_blank">• {{ news.title }}</a>
+                        <p>{{ news.summary }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <a href="{{ url_for('stock') }}" class="back-button">⬅ Back to Home</a>
+
+</body>
+</html>
