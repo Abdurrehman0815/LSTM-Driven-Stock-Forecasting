@@ -1,6 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, flash, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, render_template, request, redirect, session, jsonify
 import yfinance as yf
 import numpy as np
 import pandas as pd
@@ -11,57 +9,49 @@ from sklearn.preprocessing import MinMaxScaler
 import feedparser
 from datetime import datetime
 import os
+import secrets
+import threading
 from dotenv import load_dotenv
 
 load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "your_secret_key")
 
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db = SQLAlchemy(app)
+# Prediction history is kept in server memory, one list per browser session.
+# The browser only holds a random session ID in its cookie.
+# History is lost when the server restarts or redeploys.
+HISTORY_LOCK = threading.Lock()
+HISTORY_STORE = {}  # session id -> list of entries (oldest first)
+MAX_ENTRIES_PER_SESSION = 20
+MAX_SESSIONS = 500
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
+def get_session_id():
+    if "sid" not in session:
+        session["sid"] = secrets.token_hex(16)
+    return session["sid"]
 
-class PredictionHistory(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    stock_symbol = db.Column(db.String(10), nullable=False)
-    predicted_graph = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+def save_history(symbol, plot_html):
+    sid = get_session_id()
+    entry = {
+        "stock_symbol": symbol,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "predicted_graph": plot_html,
+    }
+    with HISTORY_LOCK:
+        entries = HISTORY_STORE.setdefault(sid, [])
+        entries.append(entry)
+        del entries[:-MAX_ENTRIES_PER_SESSION]
+        while len(HISTORY_STORE) > MAX_SESSIONS:
+            HISTORY_STORE.pop(next(iter(HISTORY_STORE)))
 
-with app.app_context():
-    db.create_all()
+def get_history():
+    sid = get_session_id()
+    with HISTORY_LOCK:
+        return list(reversed(HISTORY_STORE.get(sid, [])))
 
-@app.route("/", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        action = request.form["action"]
-        if action == "signup":
-            username = request.form["username"]
-            email = request.form["email"]
-            password = generate_password_hash(request.form["password"])
-            if User.query.filter_by(email=email).first():
-                flash("Email already registered! Try logging in.", "danger")
-            else:
-                new_user = User(username=username, email=email, password=password)
-                db.session.add(new_user)
-                db.session.commit()
-                flash("Signup successful! Please login.", "success")
-        elif action == "login":
-            email = request.form["email"]
-            password = request.form["password"]
-            user = User.query.filter_by(email=email).first()
-            if user and check_password_hash(user.password, password):
-                session["user_id"] = user.id
-                return redirect("/stock")
-            else:
-                flash("Invalid credentials! Try again.", "danger")
-    return render_template("login.html")
+@app.route("/")
+def home():
+    return redirect("/stock")
 
 def get_stock_data(symbol):
     stock = yf.Ticker(symbol)
@@ -122,8 +112,6 @@ def news():
 
 @app.route("/stock", methods=["GET", "POST"])
 def stock():
-    if "user_id" not in session:
-        return redirect("/")
     symbol1 = symbol2 = None
     if request.method == "POST":
         symbol1 = request.form["symbol1"].upper()
@@ -145,10 +133,9 @@ def stock():
                 predicted_price2 = round(future_prices2[-1], 2)
                 news2 = fetch_news(symbol2)
 
-        db.session.add(PredictionHistory(user_id=session["user_id"], stock_symbol=symbol1, predicted_graph=plot1))
-        if symbol2:
-            db.session.add(PredictionHistory(user_id=session["user_id"], stock_symbol=symbol2, predicted_graph=plot2))
-        db.session.commit()
+        save_history(symbol1, plot1)
+        if plot2 is not None:
+            save_history(symbol2, plot2)
 
         return render_template("index.html", symbol1=symbol1, current_price1=current_price1, predicted_price1=predicted_price1, plot1=plot1, info1=info1, news1=news1, symbol2=symbol2, current_price2=current_price2, predicted_price2=predicted_price2, plot2=plot2, info2=info2, news2=news2)
 
@@ -156,10 +143,7 @@ def stock():
 
 @app.route("/history")
 def history():
-    if "user_id" not in session:
-        return redirect("/")
-    user_history = PredictionHistory.query.filter_by(user_id=session["user_id"]).order_by(PredictionHistory.timestamp.desc()).all()
-    return render_template("history.html", history=user_history)
+    return render_template("history.html", history=get_history())
 
 @app.route('/get_stock_prices')
 def get_stock_prices():
