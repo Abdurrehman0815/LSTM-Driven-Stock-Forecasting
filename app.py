@@ -56,7 +56,25 @@ def home():
 def get_stock_data(symbol):
     stock = yf.Ticker(symbol)
     data = stock.history(period="2y")
-    info = stock.info
+    # Yahoo's "info" call often returns nothing from cloud hosts such as Render,
+    # so fill the price fields from the price history, which still loads.
+    try:
+        info = dict(stock.info or {})
+    except Exception:
+        info = {}
+    if not data.empty:
+        closes = data['Close']
+        if not info.get('currentPrice'):
+            info['currentPrice'] = round(float(closes.iloc[-1]), 2)
+        if not info.get('previousClose') and len(closes) > 1:
+            info['previousClose'] = round(float(closes.iloc[-2]), 2)
+        if not info.get('open'):
+            info['open'] = round(float(data['Open'].iloc[-1]), 2)
+        last_year = data.tail(252)
+        if not info.get('fiftyTwoWeekHigh'):
+            info['fiftyTwoWeekHigh'] = round(float(last_year['High'].max()), 2)
+        if not info.get('fiftyTwoWeekLow'):
+            info['fiftyTwoWeekLow'] = round(float(last_year['Low'].min()), 2)
     return data, info
 
 def predict_stock(symbol):
