@@ -106,11 +106,16 @@ def predict_stock(symbol):
 
     return data, info, future_prices, current_price
 
-def plot_stock(data, future_prices, color):
+def currency_for(symbol):
+    # Indian stocks (NSE .NS / BSE .BO) are priced in rupees, everything else in dollars.
+    return "₹" if symbol and symbol.endswith((".NS", ".BO")) else "$"
+
+def plot_stock(data, future_prices, color, currency="$"):
     past_trace = go.Scatter(x=data.index, y=data['Close'], mode='lines', name='Past Prices', line=dict(color=color))
     future_dates = pd.date_range(start=data.index[-1], periods=60, freq='D')
     future_trace = go.Scatter(x=future_dates, y=future_prices, mode='lines', name='Predicted Prices', line=dict(color='red', dash='dot'))
-    layout = go.Layout(xaxis=dict(title="Date"), yaxis=dict(title="Price (USD)"), plot_bgcolor='black', paper_bgcolor='black', font=dict(color='white'))
+    axis_label = "Price (INR)" if currency == "₹" else "Price (USD)"
+    layout = go.Layout(xaxis=dict(title="Date"), yaxis=dict(title=axis_label), plot_bgcolor='black', paper_bgcolor='black', font=dict(color='white'))
     fig = go.Figure(data=[past_trace, future_trace], layout=layout)
     return pyo.plot(fig, output_type='div')
 
@@ -139,7 +144,7 @@ def stock():
         if data1 is None:
             return render_template("index.html", error="Invalid stock symbol!")
 
-        plot1 = plot_stock(data1, future_prices1, "cyan")
+        plot1 = plot_stock(data1, future_prices1, "cyan", currency_for(symbol1))
         predicted_price1 = round(future_prices1[-1], 2)
         news1 = fetch_news(symbol1)
 
@@ -147,7 +152,7 @@ def stock():
         if symbol2:
             data2, info2, future_prices2, current_price2 = predict_stock(symbol2)
             if data2 is not None:
-                plot2 = plot_stock(data2, future_prices2, "orange")
+                plot2 = plot_stock(data2, future_prices2, "orange", currency_for(symbol2))
                 predicted_price2 = round(future_prices2[-1], 2)
                 news2 = fetch_news(symbol2)
 
@@ -155,7 +160,7 @@ def stock():
         if plot2 is not None:
             save_history(symbol2, plot2)
 
-        return render_template("index.html", symbol1=symbol1, current_price1=current_price1, predicted_price1=predicted_price1, plot1=plot1, info1=info1, news1=news1, symbol2=symbol2, current_price2=current_price2, predicted_price2=predicted_price2, plot2=plot2, info2=info2, news2=news2)
+        return render_template("index.html", symbol1=symbol1, currency1=currency_for(symbol1), current_price1=current_price1, predicted_price1=predicted_price1, plot1=plot1, info1=info1, news1=news1, symbol2=symbol2, currency2=currency_for(symbol2), current_price2=current_price2, predicted_price2=predicted_price2, plot2=plot2, info2=info2, news2=news2)
 
     return render_template("index.html", symbol1=None, symbol2=None)
 

@@ -174,8 +174,8 @@
         <div class="container" style="{% if not symbol2 %}flex-direction: column; align-items: center;{% endif %}">
             <div class="box {% if symbol2 %}half-width{% else %}full-width{% endif %}">
                 <h2>Stock: {{ symbol1 }}</h2>
-                <h3>📌 Current Price: ${{ current_price1 }}</h3>
-                <h3>📅 Predicted Price (Next 60 Days): ₹{{ predicted_price1 }}</h3>
+                <h3>📌 Current Price: {{ currency1 }}{{ current_price1 }}</h3>
+                <h3>📅 Predicted Price (Next 60 Days): {{ currency1 }}{{ predicted_price1 }}</h3>
                 <div>{{ plot1|safe }}</div>
 
                 <h2>Market Insights</h2>
@@ -194,8 +194,8 @@
             {% if symbol2 %}
             <div class="box half-width">
                 <h2>Stock: {{ symbol2 }}</h2>
-                <h3>📌 Current Price: ${{ current_price2 }}</h3>
-                <h3>📅 Predicted Price (Next 60 Days): ₹{{ predicted_price2 }}</h3>
+                <h3>📌 Current Price: {{ currency2 }}{{ current_price2 }}</h3>
+                <h3>📅 Predicted Price (Next 60 Days): {{ currency2 }}{{ predicted_price2 }}</h3>
                 <div>{{ plot2|safe }}</div>
 
                 <h2>Market Insights</h2>
